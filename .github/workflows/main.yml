@@ -119,6 +119,8 @@ jobs:
           "modify", "--installPath", "$InstallPath",
           "--add", "Microsoft.VisualStudio.Component.VC.ATL",
           "--add", "Microsoft.VisualStudio.Component.VC.ATLMFC",
+          "--add", "Microsoft.VisualStudio.Component.VC.Tools.ARM64",
+          "--add", "Microsoft.VisualStudio.Component.VC.v143.ARM64",
           "--quiet", "--norestart", "--nocache"
         )
         #vs_installer.exe有时需要运行两次才能完成安装

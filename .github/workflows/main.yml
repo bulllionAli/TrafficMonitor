@@ -5,6 +5,9 @@ on:
     tags: ['v*']
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
 
   x64_build:
@@ -19,26 +22,27 @@ jobs:
     - name: Run msbuild
       run: msbuild TrafficMonitor_Lite.sln -p:configuration="Release (lite)" -p:platform=x64 -p:platformToolset=v143
 
-    - name: Get current time
-      id: current-time
+    - name: Create ZIP
       shell: pwsh
       run: |
-        $Time = [DateTimeOffset]::UtcNow.ToOffset([TimeSpan]::FromHours(8))
-        $FormattedTime = $Time.ToString("yyyyMMdd_HHmmss")
-        "formattedTime=$FormattedTime" >> $env:GITHUB_OUTPUT
+        $OutputDir = "Bin/x64/Release (lite)"
+        $ZipPath = "$env:GITHUB_WORKSPACE/TrafficMonitor_x64_Lite.zip"
 
-    - name: Upload artifact
+        Compress-Archive `
+          -Path "$OutputDir/TrafficMonitor.exe", "$OutputDir/*.dll" `
+          -DestinationPath $ZipPath `
+          -Force
+
+    - name: Upload build artifact
       uses: actions/upload-artifact@v7
       with:
-        name: x64_${{ steps.current-time.outputs.formattedTime }}_TrafficMonitor
-        path: |
-          Bin/x64/Release (lite)/TrafficMonitor.exe
-          Bin/x64/Release (lite)/*.dll
+        name: TrafficMonitor_x64_Lite
+        path: TrafficMonitor_x64_Lite.zip
 
-    - name: Upload pdb files
+    - name: Upload PDB artifact
       uses: actions/upload-artifact@v7
       with:
-        name: x64_${{ steps.current-time.outputs.formattedTime }}_pdb
+        name: TrafficMonitor_x64_Lite_pdb
         path: Bin/x64/Release (lite)/*.pdb
 
 
@@ -54,26 +58,27 @@ jobs:
     - name: Run msbuild
       run: msbuild TrafficMonitor_Lite.sln -p:configuration="Release (lite)" -p:platform=x86 -p:platformToolset=v143
 
-    - name: Get current time
-      id: current-time
+    - name: Create ZIP
       shell: pwsh
       run: |
-        $Time = [DateTimeOffset]::UtcNow.ToOffset([TimeSpan]::FromHours(8))
-        $FormattedTime = $Time.ToString("yyyyMMdd_HHmmss")
-        "formattedTime=$FormattedTime" >> $env:GITHUB_OUTPUT
+        $OutputDir = "Bin/Release (lite)"
+        $ZipPath = "$env:GITHUB_WORKSPACE/TrafficMonitor_x86_Lite.zip"
 
-    - name: Upload artifact
+        Compress-Archive `
+          -Path "$OutputDir/TrafficMonitor.exe", "$OutputDir/*.dll" `
+          -DestinationPath $ZipPath `
+          -Force
+
+    - name: Upload build artifact
       uses: actions/upload-artifact@v7
       with:
-        name: x86_${{ steps.current-time.outputs.formattedTime }}_TrafficMonitor
-        path: |
-          Bin/Release (lite)/TrafficMonitor.exe
-          Bin/Release (lite)/*.dll
+        name: TrafficMonitor_x86_Lite
+        path: TrafficMonitor_x86_Lite.zip
 
-    - name: Upload pdb files
+    - name: Upload PDB artifact
       uses: actions/upload-artifact@v7
       with:
-        name: x86_${{ steps.current-time.outputs.formattedTime }}_pdb
+        name: TrafficMonitor_x86_Lite_pdb
         path: Bin/Release (lite)/*.pdb
 
 
@@ -89,27 +94,69 @@ jobs:
     - name: Run msbuild
       run: msbuild TrafficMonitor_Lite.sln -p:configuration="Release (lite)" -p:platform=ARM64EC -p:platformToolset=v143
 
-    - name: Get current time
-      id: current-time
+    - name: Create ZIP
       shell: pwsh
       run: |
-        $Time = [DateTimeOffset]::UtcNow.ToOffset([TimeSpan]::FromHours(8))
-        $FormattedTime = $Time.ToString("yyyyMMdd_HHmmss")
-        "formattedTime=$FormattedTime" >> $env:GITHUB_OUTPUT
+        $OutputDir = "Bin/ARM64EC/Release (lite)"
+        $ZipPath = "$env:GITHUB_WORKSPACE/TrafficMonitor_ARM64EC_Lite.zip"
 
-    # - name: Move dll file path
-    #   run: mv Bin/x64/Release/*.dll Bin/ARM64EC/Release/
+        Compress-Archive `
+          -Path "$OutputDir/TrafficMonitor.exe", "$OutputDir/*.dll" `
+          -DestinationPath $ZipPath `
+          -Force
 
-    - name: Upload artifact
+    - name: Upload build artifact
       uses: actions/upload-artifact@v7
       with:
-        name: arm64EC_${{ steps.current-time.outputs.formattedTime }}_TrafficMonitor
-        path: |
-          Bin/ARM64EC/Release (lite)/TrafficMonitor.exe
-          Bin/ARM64EC/Release (lite)/*.dll
+        name: TrafficMonitor_ARM64EC_Lite
+        path: TrafficMonitor_ARM64EC_Lite.zip
 
-    - name: Upload pdb files
+    - name: Upload PDB artifact
       uses: actions/upload-artifact@v7
       with:
-        name: arm64EC_${{ steps.current-time.outputs.formattedTime }}_pdb
+        name: TrafficMonitor_ARM64EC_Lite_pdb
         path: Bin/ARM64EC/Release (lite)/*.pdb
+
+
+  release:
+    name: Create GitHub Release
+    runs-on: windows-2022
+    needs:
+      - x64_build
+      - x86_build
+      - arm64ec_build
+
+    steps:
+    - name: Download x64 artifact
+      uses: actions/download-artifact@v6
+      with:
+        name: TrafficMonitor_x64_Lite
+        path: release_files
+
+    - name: Download x86 artifact
+      uses: actions/download-artifact@v6
+      with:
+        name: TrafficMonitor_x86_Lite
+        path: release_files
+
+    - name: Download ARM64EC artifact
+      uses: actions/download-artifact@v6
+      with:
+        name: TrafficMonitor_ARM64EC_Lite
+        path: release_files
+
+    - name: List release files
+      shell: pwsh
+      run: |
+        Get-ChildItem -Path release_files -Recurse
+
+    - name: Create GitHub Release and upload ZIP files
+      uses: softprops/action-gh-release@v3
+      with:
+        tag_name: ${{ github.ref_name }}
+        name: TrafficMonitor ${{ github.ref_name }}
+        generate_release_notes: true
+        files: |
+          release_files/TrafficMonitor_x64_Lite.zip
+          release_files/TrafficMonitor_x86_Lite.zip
+          release_files/TrafficMonitor_ARM64EC_Lite.zip

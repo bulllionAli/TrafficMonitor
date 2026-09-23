@@ -19,31 +19,55 @@ jobs:
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v3
 
-    - name: Run msbuild
+    # =========================
+    # Standard x64
+    # =========================
+    - name: Build standard x64
+      run: msbuild TrafficMonitor.sln -p:configuration=Release -p:platform=x64 -p:platformToolset=v143
+
+    - name: Create standard x64 ZIP
+      shell: pwsh
+      run: |
+        $OutputDir = "Bin/x64/Release"
+        $ZipPath = "$env:GITHUB_WORKSPACE/TrafficMonitor_x64.zip"
+
+        Compress-Archive `
+          -Path "$OutputDir/*" `
+          -DestinationPath $ZipPath `
+          -Force
+
+    # =========================
+    # Lite x64
+    # =========================
+    - name: Build Lite x64
       run: msbuild TrafficMonitor_Lite.sln -p:configuration="Release (lite)" -p:platform=x64 -p:platformToolset=v143
 
-    - name: Create ZIP
+    - name: Create Lite x64 ZIP
       shell: pwsh
       run: |
         $OutputDir = "Bin/x64/Release (lite)"
         $ZipPath = "$env:GITHUB_WORKSPACE/TrafficMonitor_x64_Lite.zip"
 
         Compress-Archive `
-          -Path "$OutputDir/TrafficMonitor.exe", "$OutputDir/*.dll" `
+          -Path "$OutputDir/*" `
           -DestinationPath $ZipPath `
           -Force
 
-    - name: Upload build artifact
+    - name: Upload x64 build artifacts
       uses: actions/upload-artifact@v7
       with:
-        name: TrafficMonitor_x64_Lite
-        path: TrafficMonitor_x64_Lite.zip
+        name: x64_release_files
+        path: |
+          TrafficMonitor_x64.zip
+          TrafficMonitor_x64_Lite.zip
 
-    - name: Upload PDB artifact
+    - name: Upload x64 PDB files
       uses: actions/upload-artifact@v7
       with:
-        name: TrafficMonitor_x64_Lite_pdb
-        path: Bin/x64/Release (lite)/*.pdb
+        name: x64_pdb
+        path: |
+          Bin/x64/Release/*.pdb
+          Bin/x64/Release (lite)/*.pdb
 
 
   x86_build:
@@ -55,31 +79,55 @@ jobs:
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v3
 
-    - name: Run msbuild
+    # =========================
+    # Standard x86
+    # =========================
+    - name: Build standard x86
+      run: msbuild TrafficMonitor.sln -p:configuration=Release -p:platform=x86 -p:platformToolset=v143
+
+    - name: Create standard x86 ZIP
+      shell: pwsh
+      run: |
+        $OutputDir = "Bin/Release"
+        $ZipPath = "$env:GITHUB_WORKSPACE/TrafficMonitor_x86.zip"
+
+        Compress-Archive `
+          -Path "$OutputDir/*" `
+          -DestinationPath $ZipPath `
+          -Force
+
+    # =========================
+    # Lite x86
+    # =========================
+    - name: Build Lite x86
       run: msbuild TrafficMonitor_Lite.sln -p:configuration="Release (lite)" -p:platform=x86 -p:platformToolset=v143
 
-    - name: Create ZIP
+    - name: Create Lite x86 ZIP
       shell: pwsh
       run: |
         $OutputDir = "Bin/Release (lite)"
         $ZipPath = "$env:GITHUB_WORKSPACE/TrafficMonitor_x86_Lite.zip"
 
         Compress-Archive `
-          -Path "$OutputDir/TrafficMonitor.exe", "$OutputDir/*.dll" `
+          -Path "$OutputDir/*" `
           -DestinationPath $ZipPath `
           -Force
 
-    - name: Upload build artifact
+    - name: Upload x86 build artifacts
       uses: actions/upload-artifact@v7
       with:
-        name: TrafficMonitor_x86_Lite
-        path: TrafficMonitor_x86_Lite.zip
+        name: x86_release_files
+        path: |
+          TrafficMonitor_x86.zip
+          TrafficMonitor_x86_Lite.zip
 
-    - name: Upload PDB artifact
+    - name: Upload x86 PDB files
       uses: actions/upload-artifact@v7
       with:
-        name: TrafficMonitor_x86_Lite_pdb
-        path: Bin/Release (lite)/*.pdb
+        name: x86_pdb
+        path: |
+          Bin/Release/*.pdb
+          Bin/Release (lite)/*.pdb
 
 
   arm64ec_build:
@@ -91,65 +139,104 @@ jobs:
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v3
 
-    - name: Run msbuild
+    # =========================
+    # Standard ARM64EC
+    # =========================
+    - name: Build standard ARM64EC
+      run: msbuild TrafficMonitor.sln -p:configuration=Release -p:platform=ARM64EC -p:platformToolset=v143
+
+    - name: Create standard ARM64EC ZIP
+      shell: pwsh
+      run: |
+        $OutputDir = "Bin/ARM64EC/Release"
+        $ZipPath = "$env:GITHUB_WORKSPACE/TrafficMonitor_ARM64EC.zip"
+
+        Compress-Archive `
+          -Path "$OutputDir/*" `
+          -DestinationPath $ZipPath `
+          -Force
+
+    # =========================
+    # Lite ARM64EC
+    # =========================
+    - name: Build Lite ARM64EC
       run: msbuild TrafficMonitor_Lite.sln -p:configuration="Release (lite)" -p:platform=ARM64EC -p:platformToolset=v143
 
-    - name: Create ZIP
+    - name: Create Lite ARM64EC ZIP
       shell: pwsh
       run: |
         $OutputDir = "Bin/ARM64EC/Release (lite)"
         $ZipPath = "$env:GITHUB_WORKSPACE/TrafficMonitor_ARM64EC_Lite.zip"
 
         Compress-Archive `
-          -Path "$OutputDir/TrafficMonitor.exe", "$OutputDir/*.dll" `
+          -Path "$OutputDir/*" `
           -DestinationPath $ZipPath `
           -Force
 
-    - name: Upload build artifact
+    - name: Upload ARM64EC build artifacts
       uses: actions/upload-artifact@v7
       with:
-        name: TrafficMonitor_ARM64EC_Lite
-        path: TrafficMonitor_ARM64EC_Lite.zip
+        name: arm64ec_release_files
+        path: |
+          TrafficMonitor_ARM64EC.zip
+          TrafficMonitor_ARM64EC_Lite.zip
 
-    - name: Upload PDB artifact
+    - name: Upload ARM64EC PDB files
       uses: actions/upload-artifact@v7
       with:
-        name: TrafficMonitor_ARM64EC_Lite_pdb
-        path: Bin/ARM64EC/Release (lite)/*.pdb
+        name: arm64ec_pdb
+        path: |
+          Bin/ARM64EC/Release/*.pdb
+          Bin/ARM64EC/Release (lite)/*.pdb
 
 
   release:
     name: Create GitHub Release
     runs-on: windows-2022
+
     needs:
       - x64_build
       - x86_build
       - arm64ec_build
 
     steps:
-    - name: Download x64 artifact
+
+    # =========================
+    # Download x64
+    # =========================
+    - name: Download x64 artifacts
       uses: actions/download-artifact@v6
       with:
-        name: TrafficMonitor_x64_Lite
+        name: x64_release_files
         path: release_files
 
-    - name: Download x86 artifact
+    # =========================
+    # Download x86
+    # =========================
+    - name: Download x86 artifacts
       uses: actions/download-artifact@v6
       with:
-        name: TrafficMonitor_x86_Lite
+        name: x86_release_files
         path: release_files
 
-    - name: Download ARM64EC artifact
+    # =========================
+    # Download ARM64EC
+    # =========================
+    - name: Download ARM64EC artifacts
       uses: actions/download-artifact@v6
       with:
-        name: TrafficMonitor_ARM64EC_Lite
+        name: arm64ec_release_files
         path: release_files
 
-    - name: List release files
+    - name: Show release files
       shell: pwsh
       run: |
+        Write-Host "Files that will be uploaded:"
         Get-ChildItem -Path release_files -Recurse
 
+    # =========================
+    # Create Release
+    # =========================
     - name: Create GitHub Release and upload ZIP files
       uses: softprops/action-gh-release@v3
       with:
@@ -157,6 +244,9 @@ jobs:
         name: TrafficMonitor ${{ github.ref_name }}
         generate_release_notes: true
         files: |
+          release_files/TrafficMonitor_x64.zip
           release_files/TrafficMonitor_x64_Lite.zip
+          release_files/TrafficMonitor_x86.zip
           release_files/TrafficMonitor_x86_Lite.zip
+          release_files/TrafficMonitor_ARM64EC.zip
           release_files/TrafficMonitor_ARM64EC_Lite.zip

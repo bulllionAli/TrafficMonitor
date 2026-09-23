@@ -157,6 +157,8 @@ protected:
     MIB_IFROW GetConnectIfTable(int connection_index);    //获取当前选择的网络连接的MIB_IFROW对象。connection_index为m_connections中的索引
     NetWorkConection GetConnection(int connection_index); //获取当前选择的网络连接的NetWorkConection对象。connection_index为m_connections中的索引
 
+    unsigned __int64 GetWlanLinkSpeed(DWORD if_index);     //通过WLAN API获取无线网卡当前关联的连接速度（单位bps），与“WLAN状态”对话框中显示的“速度”完全一致。如果该网卡不是无线网卡或获取失败，返回0
+
     void IniConnectionMenu(CMenu* pMenu);   //初始化“选择网络连接”菜单
     void IniTaskBarConnectionMenu();        //初始化任务栏窗口的“选择网络连接”菜单
     void SetConnectionMenuState(CMenu* pMenu);      //设置“选择网络连接”菜单中选中的项目

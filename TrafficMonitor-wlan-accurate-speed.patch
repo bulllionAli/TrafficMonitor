@@ -1,0 +1,100 @@
+diff --git a/TrafficMonitor/TrafficMonitorDlg.h b/TrafficMonitor/TrafficMonitorDlg.h
+--- a/TrafficMonitor/TrafficMonitorDlg.h
++++ b/TrafficMonitor/TrafficMonitorDlg.h
+@@ -157,6 +157,8 @@
+     MIB_IFROW GetConnectIfTable(int connection_index);    //获取当前选择的网络连接的MIB_IFROW对象。connection_index为m_connections中的索引
+     NetWorkConection GetConnection(int connection_index); //获取当前选择的网络连接的NetWorkConection对象。connection_index为m_connections中的索引
+ 
++    unsigned __int64 GetWlanLinkSpeed(DWORD if_index);     //通过WLAN API获取无线网卡当前关联的连接速度（单位bps），与“WLAN状态”对话框中显示的“速度”完全一致。如果该网卡不是无线网卡或获取失败，返回0
++
+     void IniConnectionMenu(CMenu* pMenu);   //初始化“选择网络连接”菜单
+     void IniTaskBarConnectionMenu();        //初始化任务栏窗口的“选择网络连接”菜单
+     void SetConnectionMenuState(CMenu* pMenu);      //设置“选择网络连接”菜单中选中的项目
+diff --git a/TrafficMonitor/TrafficMonitorDlg.cpp b/TrafficMonitor/TrafficMonitorDlg.cpp
+--- a/TrafficMonitor/TrafficMonitorDlg.cpp
++++ b/TrafficMonitor/TrafficMonitorDlg.cpp
+@@ -18,6 +18,8 @@
+ #include "WineTaskbarDlg.h"
+ #include "TaskbarHelper.h"
+ #include "SkinManager.h"
++#include <wlanapi.h>
++#pragma comment(lib, "wlanapi.lib")
+ 
+ #ifdef _DEBUG
+ #define new DEBUG_NEW
+@@ -511,6 +513,41 @@
+     return MIB_IFROW();
+ }
+ 
++unsigned __int64 CTrafficMonitorDlg::GetWlanLinkSpeed(DWORD if_index)
++{
++    //GetIfTable中的dwSpeed字段对于无线网卡来说通常不准确（可能是网卡的标称/理论速度，而不是当前实际协商的速度）
++    //“WLAN状态”对话框中显示的“速度”实际上是通过WLAN API获取的，这里用同样的方法获取，以保证数值完全一致
++    //先将IPv4接口索引转换为接口LUID，再转换为WLAN API所需要的接口GUID
++    NET_LUID luid{};
++    if (ConvertInterfaceIndexToLuid(if_index, &luid) != NO_ERROR)
++        return 0;
++    GUID if_guid{};
++    if (ConvertInterfaceLuidToGuid(&luid, &if_guid) != NO_ERROR)
++        return 0;
++
++    HANDLE hClient{};
++    DWORD cur_version{};
++    if (WlanOpenHandle(2, nullptr, &cur_version, &hClient) != ERROR_SUCCESS)
++        return 0;
++
++    unsigned __int64 speed_bps{};
++    PWLAN_CONNECTION_ATTRIBUTES connect_info{};
++    DWORD data_size{};
++    if (WlanQueryInterface(hClient, &if_guid, wlan_intf_opcode_current_connection, nullptr, &data_size, (PVOID*)&connect_info, nullptr) == ERROR_SUCCESS
++        && connect_info != nullptr)
++    {
++        if (connect_info->isState == wlan_interface_state_connected)
++        {
++            //ulTxRate的单位为Kbps（千比特每秒），与“WLAN状态”对话框中显示的“速度”一致
++            speed_bps = static_cast<unsigned __int64>(connect_info->wlanAssociationAttributes.ulTxRate) * 1000ull;
++        }
++        WlanFreeMemory(connect_info);
++    }
++
++    WlanCloseHandle(hClient, nullptr);
++    return speed_bps;
++}
++
+ NetWorkConection CTrafficMonitorDlg::GetConnection(int connection_index)
+ {
+     if (connection_index >= 0 && connection_index < static_cast<int>(m_connections.size()))
+@@ -1236,7 +1273,16 @@
+         m_in_bytes = table.dwInOctets;
+         m_out_bytes = table.dwOutOctets;
+         //dwSpeed为网卡/调制解调器当前协商的连接速度（单位bps），即“WLAN状态”对话框中显示的“速度”，无需像流量那样计算差值
+-        theApp.m_link_speed = (table.dwOperStatus == IF_OPER_STATUS_OPERATIONAL) ? table.dwSpeed : 0;
++        //但dwSpeed对于无线网卡通常不准确，无线网卡改用WLAN API获取（与系统“WLAN状态”对话框显示的数值完全一致）
++        if (table.dwOperStatus == IF_OPER_STATUS_OPERATIONAL)
++        {
++            unsigned __int64 wlan_speed = (table.dwType == IF_TYPE_IEEE80211) ? GetWlanLinkSpeed(table.dwIndex) : 0;
++            theApp.m_link_speed = (wlan_speed > 0) ? wlan_speed : table.dwSpeed;
++        }
++        else
++        {
++            theApp.m_link_speed = 0;
++        }
+     }
+     else        //获取全部连接的网速
+     {
+@@ -1251,8 +1297,13 @@
+             //  continue;       //连接列表中可能会有相同的连接，统计所有连接的网速时，忽略掉已发送和已接收字节数完全相同的连接
+             m_in_bytes += table.dwInOctets;
+             m_out_bytes += table.dwOutOctets;
+-            if (table.dwOperStatus == IF_OPER_STATUS_OPERATIONAL && table.dwSpeed > max_link_speed)
+-                max_link_speed = table.dwSpeed;
++            if (table.dwOperStatus == IF_OPER_STATUS_OPERATIONAL)
++            {
++                unsigned __int64 wlan_speed = (table.dwType == IF_TYPE_IEEE80211) ? GetWlanLinkSpeed(table.dwIndex) : 0;
++                unsigned __int64 cur_speed = (wlan_speed > 0) ? wlan_speed : table.dwSpeed;
++                if (cur_speed > max_link_speed)
++                    max_link_speed = cur_speed;
++            }
+         }
+         theApp.m_link_speed = max_link_speed;
+     }

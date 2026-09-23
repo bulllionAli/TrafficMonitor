@@ -1,0 +1,81 @@
+diff --git a/.github/workflows/main.yml b/.github/workflows/main.yml
+--- a/.github/workflows/main.yml
++++ b/.github/workflows/main.yml
+@@ -21,11 +21,21 @@
+           "modify", "--installPath", "$InstallPath",
+           "--add", "Microsoft.VisualStudio.Component.VC.ATL",
+           "--add", "Microsoft.VisualStudio.Component.VC.ATLMFC",
+-          "--quiet", "--norestart", "--nocache"
++          "--quiet", "--norestart"
+         )
+-        #vs_installer.exe有时需要运行两次才能完成安装
+-        1..2 | ForEach-Object {
+-          Start-Process -FilePath "$InstallerDir\vs_installer.exe" -ArgumentList $Arguments -Wait -PassThru | Out-Null
++        #vs_installer.exe在无人值守的Runner上偶尔会因为网络或安装器锁而失败，这里重试3次并检查退出码
++        $ok = $false
++        for ($i = 1; $i -le 3; $i++) {
++          Write-Host "vs_installer attempt $i..."
++          $proc = Start-Process -FilePath "$InstallerDir\vs_installer.exe" -ArgumentList $Arguments -Wait -PassThru
++          Write-Host "Exit code: $($proc.ExitCode)"
++          if ($proc.ExitCode -eq 0) { $ok = $true; break }
++          Start-Sleep -Seconds 20
++        }
++        if (-not $ok) {
++          Write-Host "##[error] vs_installer failed after 3 attempts"
++          Get-ChildItem "$env:TEMP" -Filter "dd_setup_*.log" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1 | ForEach-Object { Write-Host "---- $($_.FullName) (tail) ----"; Get-Content $_.FullName -Tail 150 }
++          exit 1
+         }
+       
+     - name: Add msbuild to PATH
+@@ -70,11 +80,21 @@
+           "modify", "--installPath", "$InstallPath",
+           "--add", "Microsoft.VisualStudio.Component.VC.ATL",
+           "--add", "Microsoft.VisualStudio.Component.VC.ATLMFC",
+-          "--quiet", "--norestart", "--nocache"
++          "--quiet", "--norestart"
+         )
+-        #vs_installer.exe有时需要运行两次才能完成安装
+-        1..2 | ForEach-Object {
+-          Start-Process -FilePath "$InstallerDir\vs_installer.exe" -ArgumentList $Arguments -Wait -PassThru | Out-Null
++        #vs_installer.exe在无人值守的Runner上偶尔会因为网络或安装器锁而失败，这里重试3次并检查退出码
++        $ok = $false
++        for ($i = 1; $i -le 3; $i++) {
++          Write-Host "vs_installer attempt $i..."
++          $proc = Start-Process -FilePath "$InstallerDir\vs_installer.exe" -ArgumentList $Arguments -Wait -PassThru
++          Write-Host "Exit code: $($proc.ExitCode)"
++          if ($proc.ExitCode -eq 0) { $ok = $true; break }
++          Start-Sleep -Seconds 20
++        }
++        if (-not $ok) {
++          Write-Host "##[error] vs_installer failed after 3 attempts"
++          Get-ChildItem "$env:TEMP" -Filter "dd_setup_*.log" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1 | ForEach-Object { Write-Host "---- $($_.FullName) (tail) ----"; Get-Content $_.FullName -Tail 150 }
++          exit 1
+         }
+       
+     - name: Add msbuild to PATH
+@@ -121,11 +141,21 @@
+           "--add", "Microsoft.VisualStudio.Component.VC.ATLMFC",
+           "--add", "Microsoft.VisualStudio.Component.VC.Tools.ARM64",
+           "--add", "Microsoft.VisualStudio.Component.VC.v143.ARM64",
+-          "--quiet", "--norestart", "--nocache"
++          "--quiet", "--norestart"
+         )
+-        #vs_installer.exe有时需要运行两次才能完成安装
+-        1..2 | ForEach-Object {
+-          Start-Process -FilePath "$InstallerDir\vs_installer.exe" -ArgumentList $Arguments -Wait -PassThru | Out-Null
++        #vs_installer.exe在无人值守的Runner上偶尔会因为网络或安装器锁而失败，这里重试3次并检查退出码
++        $ok = $false
++        for ($i = 1; $i -le 3; $i++) {
++          Write-Host "vs_installer attempt $i..."
++          $proc = Start-Process -FilePath "$InstallerDir\vs_installer.exe" -ArgumentList $Arguments -Wait -PassThru
++          Write-Host "Exit code: $($proc.ExitCode)"
++          if ($proc.ExitCode -eq 0) { $ok = $true; break }
++          Start-Sleep -Seconds 20
++        }
++        if (-not $ok) {
++          Write-Host "##[error] vs_installer failed after 3 attempts"
++          Get-ChildItem "$env:TEMP" -Filter "dd_setup_*.log" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1 | ForEach-Object { Write-Host "---- $($_.FullName) (tail) ----"; Get-Content $_.FullName -Tail 150 }
++          exit 1
+         }
+       
+     - name: Add msbuild to PATH

@@ -377,7 +377,8 @@ public:
         MI_HDD_USAGE,           /**< 硬盘利用率 */
         MI_CPU_FREQ,            /**< CPU频率 */
         MI_TODAY_UP_TRAFFIC,    /**< 今日上传流量 */
-        MI_TODAY_DOWN_TRAFFIC   /**< 今日下载流量 */
+        MI_TODAY_DOWN_TRAFFIC,  /**< 今日下载流量 */
+        MI_LINK_SPEED           /**< 网络连接（网卡/调制解调器）速度，单位为bps */
     };
 
     /**

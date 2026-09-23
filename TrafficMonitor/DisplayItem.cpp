@@ -79,6 +79,7 @@ CString CommonDisplayItem::GetItemName() const
         case TDI_HDD_USAGE: return CCommon::LoadText(IDS_HDD_USAGE);
         case TDI_CPU_FREQ: return CCommon::LoadText(IDS_CPU_FREQ);
         case TDI_TODAY_TRAFFIC: return CCommon::LoadText(IDS_TRAFFIC_USED);
+        case TDI_LINK_SPEED: return CCommon::LoadText(IDS_LINK_SPEED);
         default:
             ASSERT(false);
             break;
@@ -144,6 +145,9 @@ std::wstring CommonDisplayItem::DefaultString(bool is_main_window) const
         case TDI_HDD_USAGE:
             default_text = CCommon::LoadText(IDS_HDD_DISP, _T(": "));
             break;
+        case TDI_LINK_SPEED:
+            default_text = CCommon::LoadText(IDS_LINK_SPEED_DISP, _T(": "));
+            break;
         default:
             ASSERT(false);
             break;
@@ -176,6 +180,7 @@ const wchar_t* CommonDisplayItem::GetItemIniKeyName() const
         case TDI_TOTAL_SPEED: return L"total_speed_string";
         case TDI_CPU_FREQ: return L"cpu_freq_string";
         case TDI_TODAY_TRAFFIC: return L"today_traffic_string";
+        case TDI_LINK_SPEED: return L"link_speed_string";
         }
         ASSERT(FALSE);
         return L"";
@@ -268,6 +273,10 @@ CString CommonDisplayItem::GetItemValueText(bool is_main_window) const
         case TDI_TODAY_TRAFFIC:
             str_value = CCommon::KBytesToString((theApp.m_today_up_traffic + theApp.m_today_down_traffic) / 1024u);
             break;
+        //网络连接（调制解调器/网卡）速度
+        case TDI_LINK_SPEED:
+            str_value = CCommon::LinkSpeedToString(theApp.m_link_speed, *cfg_data);
+            break;
         default:
             break;
         }
@@ -310,6 +319,9 @@ CString CommonDisplayItem::GetItemValueSampleText(bool is_main_window) const
             break;
         case TDI_CPU_FREQ:
             sample_str = _T("1.0 GHz");
+            break;
+        case TDI_LINK_SPEED:
+            sample_str = _T("866 Mbps");
             break;
         default:
             sample_str = _T("99");
@@ -403,6 +415,15 @@ CString CommonDisplayItem::GetItemValueSampleText(bool is_main_window) const
                 sample_str = _T("999.99 MB");
             else
                 sample_str = _T("999.99MB");
+        }
+            break;
+        //网络连接速度
+        case TDI_LINK_SPEED:
+        {
+            if (theApp.m_taskbar_data.separate_value_unit_with_space)
+                sample_str = _T("999 Mbps");
+            else
+                sample_str = _T("999Mbps");
         }
             break;
         }

@@ -62,6 +62,8 @@ public:
     //将使用率转换成字符串
     static CString UsageToString(int usage, const PublicSettingData& cfg);
     static CString FreqToString(float usage, const PublicSettingData& cfg);
+    //将网络连接（网卡/调制解调器）速度（单位为bps）转换成以Mbps、Gbps为单位的字符串
+    static CString LinkSpeedToString(unsigned __int64 speed_bps, const PublicSettingData& cfg);
     //static CString KBytesToString(unsigned int kb_size);
     static CString KBytesToString(unsigned __int64 kb_size);
 

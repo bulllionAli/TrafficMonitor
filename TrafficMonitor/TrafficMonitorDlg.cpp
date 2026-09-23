@@ -188,6 +188,11 @@ CString CTrafficMonitorDlg::GetMouseTipsInfo()
         temp.Format(_T("\r\n%s: %s"), CCommon::LoadText(IDS_CPU_FREQ), CCommon::FreqToString(theApp.m_cpu_freq, theApp.m_main_wnd_data));
         tip_info += temp;
     }
+    if (!skin_layout.GetItem(TDI_LINK_SPEED).show && theApp.m_link_speed > 0)
+    {
+        temp.Format(_T("\r\n%s: %s"), CCommon::LoadText(IDS_LINK_SPEED), CCommon::LinkSpeedToString(theApp.m_link_speed, theApp.m_main_wnd_data));
+        tip_info += temp;
+    }
     if (!skin_layout.GetItem(TDI_GPU_USAGE).show && theApp.m_gpu_usage >= 0)
     {
         temp.Format(_T("\r\n%s: %d %%"), CCommon::LoadText(IDS_GPU_USAGE), theApp.m_gpu_usage);
@@ -1230,11 +1235,14 @@ void CTrafficMonitorDlg::DoMonitorAcquisition()
         auto table = GetConnectIfTable(m_connection_selected);
         m_in_bytes = table.dwInOctets;
         m_out_bytes = table.dwOutOctets;
+        //dwSpeed为网卡/调制解调器当前协商的连接速度（单位bps），即“WLAN状态”对话框中显示的“速度”，无需像流量那样计算差值
+        theApp.m_link_speed = (table.dwOperStatus == IF_OPER_STATUS_OPERATIONAL) ? table.dwSpeed : 0;
     }
     else        //获取全部连接的网速
     {
         m_in_bytes = 0;
         m_out_bytes = 0;
+        unsigned __int64 max_link_speed{};     //多个连接时，取其中状态正常且速度最快的连接的速度
         for (size_t i{}; i < m_connections.size(); i++)
         {
             auto table = GetConnectIfTable(i);
@@ -1243,7 +1251,10 @@ void CTrafficMonitorDlg::DoMonitorAcquisition()
             //  continue;       //连接列表中可能会有相同的连接，统计所有连接的网速时，忽略掉已发送和已接收字节数完全相同的连接
             m_in_bytes += table.dwInOctets;
             m_out_bytes += table.dwOutOctets;
+            if (table.dwOperStatus == IF_OPER_STATUS_OPERATIONAL && table.dwSpeed > max_link_speed)
+                max_link_speed = table.dwSpeed;
         }
+        theApp.m_link_speed = max_link_speed;
     }
 
     unsigned __int64 cur_in_speed{}, cur_out_speed{};       //本次监控时间间隔内的上传和下载速度

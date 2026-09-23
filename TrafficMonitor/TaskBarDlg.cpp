@@ -682,6 +682,11 @@ CString CTaskBarDlg::GetMouseTipsInfo()
         temp.Format(_T("\r\n%s: %s"), CCommon::LoadText(IDS_CPU_FREQ), CCommon::FreqToString(theApp.m_cpu_freq, theApp.m_taskbar_data));
         tip_info += temp;
     }
+    if (!IsItemShow(TDI_LINK_SPEED) && theApp.m_link_speed > 0)
+    {
+        temp.Format(_T("\r\n%s: %s"), CCommon::LoadText(IDS_LINK_SPEED), CCommon::LinkSpeedToString(theApp.m_link_speed, theApp.m_taskbar_data));
+        tip_info += temp;
+    }
 
     if (!IsItemShow(TDI_GPU_USAGE) && theApp.m_gpu_usage >= 0)
     {

@@ -1,0 +1,296 @@
+diff --git a/TrafficMonitor/Common.cpp b/TrafficMonitor/Common.cpp
+index 3f2f758..f152227 100644
+--- a/TrafficMonitor/Common.cpp
++++ b/TrafficMonitor/Common.cpp
+@@ -387,6 +387,31 @@ CString CCommon::FreqToString(float freq, const PublicSettingData& cfg)
+     str_val += _T("GHz");
+     return str_val;
+ }
++
++CString CCommon::LinkSpeedToString(unsigned __int64 speed_bps, const PublicSettingData& cfg)
++{
++    CString str_val;
++    CString unit;
++    if (speed_bps == 0)
++    {
++        str_val = _T("--");
++        unit = _T("Mbps");
++    }
++    else if (speed_bps < 1000ll * 1000 * 1000)     //小于1Gbps时以Mbps为单位显示
++    {
++        str_val.Format(_T("%.0f"), speed_bps / 1000.0 / 1000.0);
++        unit = _T("Mbps");
++    }
++    else
++    {
++        str_val.Format(_T("%.1f"), speed_bps / 1000.0 / 1000.0 / 1000.0);
++        unit = _T("Gbps");
++    }
++    if (cfg.separate_value_unit_with_space)
++        str_val += _T(' ');
++    str_val += unit;
++    return str_val;
++}
+ //CString CCommon::KBytesToString(unsigned int kb_size)
+ //{
+ //  CString k_bytes_str;
+diff --git a/TrafficMonitor/Common.h b/TrafficMonitor/Common.h
+index 3a6cca3..0dc5c29 100644
+--- a/TrafficMonitor/Common.h
++++ b/TrafficMonitor/Common.h
+@@ -62,6 +62,8 @@ public:
+     //将使用率转换成字符串
+     static CString UsageToString(int usage, const PublicSettingData& cfg);
+     static CString FreqToString(float usage, const PublicSettingData& cfg);
++    //将网络连接（网卡/调制解调器）速度（单位为bps）转换成以Mbps、Gbps为单位的字符串
++    static CString LinkSpeedToString(unsigned __int64 speed_bps, const PublicSettingData& cfg);
+     //static CString KBytesToString(unsigned int kb_size);
+     static CString KBytesToString(unsigned __int64 kb_size);
+ 
+diff --git a/TrafficMonitor/DisplayItem.cpp b/TrafficMonitor/DisplayItem.cpp
+index 69ebf55..746eeb8 100644
+--- a/TrafficMonitor/DisplayItem.cpp
++++ b/TrafficMonitor/DisplayItem.cpp
+@@ -79,6 +79,7 @@ CString CommonDisplayItem::GetItemName() const
+         case TDI_HDD_USAGE: return CCommon::LoadText(IDS_HDD_USAGE);
+         case TDI_CPU_FREQ: return CCommon::LoadText(IDS_CPU_FREQ);
+         case TDI_TODAY_TRAFFIC: return CCommon::LoadText(IDS_TRAFFIC_USED);
++        case TDI_LINK_SPEED: return CCommon::LoadText(IDS_LINK_SPEED);
+         default:
+             ASSERT(false);
+             break;
+@@ -144,6 +145,9 @@ std::wstring CommonDisplayItem::DefaultString(bool is_main_window) const
+         case TDI_HDD_USAGE:
+             default_text = CCommon::LoadText(IDS_HDD_DISP, _T(": "));
+             break;
++        case TDI_LINK_SPEED:
++            default_text = CCommon::LoadText(IDS_LINK_SPEED_DISP, _T(": "));
++            break;
+         default:
+             ASSERT(false);
+             break;
+@@ -176,6 +180,7 @@ const wchar_t* CommonDisplayItem::GetItemIniKeyName() const
+         case TDI_TOTAL_SPEED: return L"total_speed_string";
+         case TDI_CPU_FREQ: return L"cpu_freq_string";
+         case TDI_TODAY_TRAFFIC: return L"today_traffic_string";
++        case TDI_LINK_SPEED: return L"link_speed_string";
+         }
+         ASSERT(FALSE);
+         return L"";
+@@ -268,6 +273,10 @@ CString CommonDisplayItem::GetItemValueText(bool is_main_window) const
+         case TDI_TODAY_TRAFFIC:
+             str_value = CCommon::KBytesToString((theApp.m_today_up_traffic + theApp.m_today_down_traffic) / 1024u);
+             break;
++        //网络连接（调制解调器/网卡）速度
++        case TDI_LINK_SPEED:
++            str_value = CCommon::LinkSpeedToString(theApp.m_link_speed, *cfg_data);
++            break;
+         default:
+             break;
+         }
+@@ -311,6 +320,9 @@ CString CommonDisplayItem::GetItemValueSampleText(bool is_main_window) const
+         case TDI_CPU_FREQ:
+             sample_str = _T("1.0 GHz");
+             break;
++        case TDI_LINK_SPEED:
++            sample_str = _T("866 Mbps");
++            break;
+         default:
+             sample_str = _T("99");
+             break;
+@@ -405,6 +417,15 @@ CString CommonDisplayItem::GetItemValueSampleText(bool is_main_window) const
+                 sample_str = _T("999.99MB");
+         }
+             break;
++        //网络连接速度
++        case TDI_LINK_SPEED:
++        {
++            if (theApp.m_taskbar_data.separate_value_unit_with_space)
++                sample_str = _T("999 Mbps");
++            else
++                sample_str = _T("999Mbps");
++        }
++            break;
+         }
+         return sample_str;
+     }
+diff --git a/TrafficMonitor/DisplayItem.h b/TrafficMonitor/DisplayItem.h
+index 063c1f7..8842123 100644
+--- a/TrafficMonitor/DisplayItem.h
++++ b/TrafficMonitor/DisplayItem.h
+@@ -16,7 +16,8 @@ enum DisplayItem
+     TDI_HDD_USAGE,
+     TDI_TOTAL_SPEED,
+     TDI_CPU_FREQ,
+-    TDI_TODAY_TRAFFIC
++    TDI_TODAY_TRAFFIC,
++    TDI_LINK_SPEED
+ };
+ 
+ //所有内置显示项目的集合
+@@ -26,7 +27,7 @@ const std::set<DisplayItem> AllDisplayItems
+ #ifndef WITHOUT_TEMPERATURE
+     , TDI_CPU_TEMP, TDI_GPU_TEMP, TDI_HDD_TEMP, TDI_MAIN_BOARD_TEMP
+ #endif
+-    , TDI_HDD_USAGE, TDI_CPU_FREQ, TDI_TOTAL_SPEED, TDI_TODAY_TRAFFIC
++    , TDI_HDD_USAGE, TDI_CPU_FREQ, TDI_TOTAL_SPEED, TDI_TODAY_TRAFFIC, TDI_LINK_SPEED
+ };
+ 
+ //显示的项目
+diff --git a/TrafficMonitor/SkinFile.cpp b/TrafficMonitor/SkinFile.cpp
+index e29e931..bcd3ede 100644
+--- a/TrafficMonitor/SkinFile.cpp
++++ b/TrafficMonitor/SkinFile.cpp
+@@ -753,6 +753,9 @@ string CSkinFile::GetDisplayItemXmlNodeName(DisplayItem display_item)
+     case TDI_CPU_FREQ:
+         return "cpu_freq";
+         break;
++    case TDI_LINK_SPEED:
++        return "link_speed";
++        break;
+     default:
+         return string();
+         break;
+diff --git a/TrafficMonitor/TaskBarDlg.cpp b/TrafficMonitor/TaskBarDlg.cpp
+index 30f2ddc..5839252 100644
+--- a/TrafficMonitor/TaskBarDlg.cpp
++++ b/TrafficMonitor/TaskBarDlg.cpp
+@@ -682,6 +682,11 @@ CString CTaskBarDlg::GetMouseTipsInfo()
+         temp.Format(_T("\r\n%s: %s"), CCommon::LoadText(IDS_CPU_FREQ), CCommon::FreqToString(theApp.m_cpu_freq, theApp.m_taskbar_data));
+         tip_info += temp;
+     }
++    if (!IsItemShow(TDI_LINK_SPEED) && theApp.m_link_speed > 0)
++    {
++        temp.Format(_T("\r\n%s: %s"), CCommon::LoadText(IDS_LINK_SPEED), CCommon::LinkSpeedToString(theApp.m_link_speed, theApp.m_taskbar_data));
++        tip_info += temp;
++    }
+ 
+     if (!IsItemShow(TDI_GPU_USAGE) && theApp.m_gpu_usage >= 0)
+     {
+diff --git a/TrafficMonitor/TrafficMonitor.cpp b/TrafficMonitor/TrafficMonitor.cpp
+index 24a16a1..e23b582 100644
+--- a/TrafficMonitor/TrafficMonitor.cpp
++++ b/TrafficMonitor/TrafficMonitor.cpp
+@@ -1419,6 +1419,7 @@ double CTrafficMonitorApp::GetMonitorValue(MonitorItem item)
+     case MI_CPU_FREQ: return m_cpu_freq;
+     case MI_TODAY_UP_TRAFFIC: return m_today_up_traffic;
+     case MI_TODAY_DOWN_TRAFFIC: return m_today_down_traffic;
++    case MI_LINK_SPEED: return static_cast<double>(m_link_speed);
+     }
+     return 0.0;
+ }
+@@ -1450,6 +1451,7 @@ const wchar_t* CTrafficMonitorApp::GetMonitorValueString(MonitorItem item, int i
+         case MI_MAIN_BOARD_TEMP: display_item = DisplayItem::TDI_MAIN_BOARD_TEMP; break;
+         case MI_HDD_USAGE: display_item = DisplayItem::TDI_HDD_USAGE; break;
+         case MI_CPU_FREQ: display_item = DisplayItem::TDI_CPU_FREQ; break;
++        case MI_LINK_SPEED: display_item = DisplayItem::TDI_LINK_SPEED; break;
+         }
+         str_value = CommonDisplayItem(display_item).GetItemValueText(is_main_window);
+     }
+diff --git a/TrafficMonitor/TrafficMonitor.h b/TrafficMonitor/TrafficMonitor.h
+index 14a8c37..859cc22 100644
+--- a/TrafficMonitor/TrafficMonitor.h
++++ b/TrafficMonitor/TrafficMonitor.h
+@@ -47,6 +47,7 @@ public:
+     //以下数据定义为App类中的公共成员，以便于在主对话框和任务栏窗口中都能访问
+     unsigned __int64 m_in_speed{};      //下载速度
+     unsigned __int64 m_out_speed{};     //上传速度
++    unsigned __int64 m_link_speed{};    //网络连接（网卡/调制解调器）速度，单位为bps
+     int m_cpu_usage{ -1 };      //CPU利用率
+     int m_memory_usage{ -1 };   //内存利用率
+     int m_used_memory{};    //可用物理内存（单位为KB）
+diff --git a/TrafficMonitor/TrafficMonitorDlg.cpp b/TrafficMonitor/TrafficMonitorDlg.cpp
+index 75f1e7c..4f1eafc 100644
+--- a/TrafficMonitor/TrafficMonitorDlg.cpp
++++ b/TrafficMonitor/TrafficMonitorDlg.cpp
+@@ -188,6 +188,11 @@ CString CTrafficMonitorDlg::GetMouseTipsInfo()
+         temp.Format(_T("\r\n%s: %s"), CCommon::LoadText(IDS_CPU_FREQ), CCommon::FreqToString(theApp.m_cpu_freq, theApp.m_main_wnd_data));
+         tip_info += temp;
+     }
++    if (!skin_layout.GetItem(TDI_LINK_SPEED).show && theApp.m_link_speed > 0)
++    {
++        temp.Format(_T("\r\n%s: %s"), CCommon::LoadText(IDS_LINK_SPEED), CCommon::LinkSpeedToString(theApp.m_link_speed, theApp.m_main_wnd_data));
++        tip_info += temp;
++    }
+     if (!skin_layout.GetItem(TDI_GPU_USAGE).show && theApp.m_gpu_usage >= 0)
+     {
+         temp.Format(_T("\r\n%s: %d %%"), CCommon::LoadText(IDS_GPU_USAGE), theApp.m_gpu_usage);
+@@ -1230,11 +1235,14 @@ void CTrafficMonitorDlg::DoMonitorAcquisition()
+         auto table = GetConnectIfTable(m_connection_selected);
+         m_in_bytes = table.dwInOctets;
+         m_out_bytes = table.dwOutOctets;
++        //dwSpeed为网卡/调制解调器当前协商的连接速度（单位bps），即“WLAN状态”对话框中显示的“速度”，无需像流量那样计算差值
++        theApp.m_link_speed = (table.dwOperStatus == IF_OPER_STATUS_OPERATIONAL) ? table.dwSpeed : 0;
+     }
+     else        //获取全部连接的网速
+     {
+         m_in_bytes = 0;
+         m_out_bytes = 0;
++        unsigned __int64 max_link_speed{};     //多个连接时，取其中状态正常且速度最快的连接的速度
+         for (size_t i{}; i < m_connections.size(); i++)
+         {
+             auto table = GetConnectIfTable(i);
+@@ -1243,7 +1251,10 @@ void CTrafficMonitorDlg::DoMonitorAcquisition()
+             //  continue;       //连接列表中可能会有相同的连接，统计所有连接的网速时，忽略掉已发送和已接收字节数完全相同的连接
+             m_in_bytes += table.dwInOctets;
+             m_out_bytes += table.dwOutOctets;
++            if (table.dwOperStatus == IF_OPER_STATUS_OPERATIONAL && table.dwSpeed > max_link_speed)
++                max_link_speed = table.dwSpeed;
+         }
++        theApp.m_link_speed = max_link_speed;
+     }
+ 
+     unsigned __int64 cur_in_speed{}, cur_out_speed{};       //本次监控时间间隔内的上传和下载速度
+diff --git a/TrafficMonitor/language.h b/TrafficMonitor/language.h
+index 659fc2b..aaab793 100644
+--- a/TrafficMonitor/language.h
++++ b/TrafficMonitor/language.h
+@@ -199,6 +199,8 @@
+ #define IDS_SELECT_AT_LEASE_ONE_WARNING L"IDS_SELECT_AT_LEASE_ONE_WARNING"
+ #define IDS_AUTO_SAVE_TO_PRESET_TIP L"IDS_AUTO_SAVE_TO_PRESET_TIP"
+ #define IDS_TOTAL_NET_SPEED L"IDS_TOTAL_NET_SPEED"
++#define IDS_LINK_SPEED L"IDS_LINK_SPEED"
++#define IDS_LINK_SPEED_DISP L"IDS_LINK_SPEED_DISP"
+ #define IDS_SHOW_RESOURCE_USAGE_GRAPH_TIP L"IDS_SHOW_RESOURCE_USAGE_GRAPH_TIP"
+ #define IDS_SHOW_NET_SPEED_GRAPH_TIP L"IDS_SHOW_NET_SPEED_GRAPH_TIP"
+ #define IDS_REFRESH_CONNECTION_LIST L"IDS_REFRESH_CONNECTION_LIST"
+diff --git a/TrafficMonitor/language/English.ini b/TrafficMonitor/language/English.ini
+index 2d62d80..ab3edca 100644
+--- a/TrafficMonitor/language/English.ini
++++ b/TrafficMonitor/language/English.ini
+@@ -203,6 +203,8 @@ IDS_MODIFY_PRESET = "Modify Preset"
+ IDS_SELECT_AT_LEASE_ONE_WARNING= "Please select at least one!"
+ IDS_AUTO_SAVE_TO_PRESET_TIP = "When the= ""Automatically adapt to Windows 10 dark/light theme"" function is enabled, if this option is checked, when the taskbar window color, background color settings are changed, according to the current Windows dark/light theme, automatically save to the corresponding preset."
+ IDS_TOTAL_NET_SPEED = "Total speed"
++IDS_LINK_SPEED = "Link speed"
++IDS_LINK_SPEED_DISP = "LINK"
+ IDS_SHOW_RESOURCE_USAGE_GRAPH_TIP = "Display resource usage graphs on CPU/memory hard disk utilization, temperature information, and plugin items."
+ IDS_SHOW_NET_SPEED_GRAPH_TIP = "Display net speed indicator on upload, download and total net speed."
+ IDS_REFRESH_CONNECTION_LIST= "Refresh connection list"
+diff --git a/TrafficMonitor/language/Simplified_Chinese.ini b/TrafficMonitor/language/Simplified_Chinese.ini
+index 592e8d5..a4e37b1 100644
+--- a/TrafficMonitor/language/Simplified_Chinese.ini
++++ b/TrafficMonitor/language/Simplified_Chinese.ini
+@@ -203,6 +203,8 @@ IDS_MODIFY_PRESET = "修改预设方案"
+ IDS_SELECT_AT_LEASE_ONE_WARNING= "请至少选择一项！"
+ IDS_AUTO_SAVE_TO_PRESET_TIP = "在开启了“自动适应Windows10深色/浅色主题”功能时，如果勾选此项，则会在任务栏窗口颜色、背景颜色等设置更改时，根据当前Windows的深色/浅色主题，自动保存到对应的预设中。"
+ IDS_TOTAL_NET_SPEED = "总网速"
++IDS_LINK_SPEED = "连接速度"
++IDS_LINK_SPEED_DISP = "连接"
+ IDS_SHOW_RESOURCE_USAGE_GRAPH_TIP= "在CPU/内存硬盘利用率、温度信息、以及插件项目上显示资源占用图"
+ IDS_SHOW_NET_SPEED_GRAPH_TIP= "在上传、下载和总网速上显示网速指示"
+ IDS_REFRESH_CONNECTION_LIST= "刷新网络连接列表"
+diff --git a/include/PluginInterface.h b/include/PluginInterface.h
+index 9f5c76d..3038bc2 100644
+--- a/include/PluginInterface.h
++++ b/include/PluginInterface.h
+@@ -377,7 +377,8 @@ public:
+         MI_HDD_USAGE,           /**< 硬盘利用率 */
+         MI_CPU_FREQ,            /**< CPU频率 */
+         MI_TODAY_UP_TRAFFIC,    /**< 今日上传流量 */
+-        MI_TODAY_DOWN_TRAFFIC   /**< 今日下载流量 */
++        MI_TODAY_DOWN_TRAFFIC,  /**< 今日下载流量 */
++        MI_LINK_SPEED           /**< 网络连接（网卡/调制解调器）速度，单位为bps */
+     };
+ 
+     /**

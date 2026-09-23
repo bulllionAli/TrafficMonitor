@@ -1419,6 +1419,7 @@ double CTrafficMonitorApp::GetMonitorValue(MonitorItem item)
     case MI_CPU_FREQ: return m_cpu_freq;
     case MI_TODAY_UP_TRAFFIC: return m_today_up_traffic;
     case MI_TODAY_DOWN_TRAFFIC: return m_today_down_traffic;
+    case MI_LINK_SPEED: return static_cast<double>(m_link_speed);
     }
     return 0.0;
 }
@@ -1450,6 +1451,7 @@ const wchar_t* CTrafficMonitorApp::GetMonitorValueString(MonitorItem item, int i
         case MI_MAIN_BOARD_TEMP: display_item = DisplayItem::TDI_MAIN_BOARD_TEMP; break;
         case MI_HDD_USAGE: display_item = DisplayItem::TDI_HDD_USAGE; break;
         case MI_CPU_FREQ: display_item = DisplayItem::TDI_CPU_FREQ; break;
+        case MI_LINK_SPEED: display_item = DisplayItem::TDI_LINK_SPEED; break;
         }
         str_value = CommonDisplayItem(display_item).GetItemValueText(is_main_window);
     }

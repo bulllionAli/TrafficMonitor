@@ -387,6 +387,31 @@ CString CCommon::FreqToString(float freq, const PublicSettingData& cfg)
     str_val += _T("GHz");
     return str_val;
 }
+
+CString CCommon::LinkSpeedToString(unsigned __int64 speed_bps, const PublicSettingData& cfg)
+{
+    CString str_val;
+    CString unit;
+    if (speed_bps == 0)
+    {
+        str_val = _T("--");
+        unit = _T("Mbps");
+    }
+    else if (speed_bps < 1000ll * 1000 * 1000)     //小于1Gbps时以Mbps为单位显示
+    {
+        str_val.Format(_T("%.0f"), speed_bps / 1000.0 / 1000.0);
+        unit = _T("Mbps");
+    }
+    else
+    {
+        str_val.Format(_T("%.1f"), speed_bps / 1000.0 / 1000.0 / 1000.0);
+        unit = _T("Gbps");
+    }
+    if (cfg.separate_value_unit_with_space)
+        str_val += _T(' ');
+    str_val += unit;
+    return str_val;
+}
 //CString CCommon::KBytesToString(unsigned int kb_size)
 //{
 //  CString k_bytes_str;

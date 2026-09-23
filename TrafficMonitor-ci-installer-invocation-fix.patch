@@ -1,0 +1,136 @@
+diff --git a/.github/workflows/main.yml b/.github/workflows/main.yml
+--- a/.github/workflows/main.yml
++++ b/.github/workflows/main.yml
+@@ -15,26 +15,25 @@
+     - name: Install MFC and ATL
+       shell: pwsh
+       run: |
+-        $InstallerDir = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer"
+-        $InstallPath = & "$InstallerDir\vswhere.exe" -latest -property installationPath
+-        $Arguments = @(
+-          "modify", "--installPath", "$InstallPath",
+-          "--add", "Microsoft.VisualStudio.Component.VC.ATL",
+-          "--add", "Microsoft.VisualStudio.Component.VC.ATLMFC",
+-          "--quiet", "--norestart"
++        Set-Location "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\"
++        $InstallPath = & ".\vswhere.exe" -latest -property installationPath
++        $ComponentsToAdd = @(
++          "Microsoft.VisualStudio.Component.VC.ATL",
++          "Microsoft.VisualStudio.Component.VC.ATLMFC"
+         )
+-        #vs_installer.exe在无人值守的Runner上偶尔会因为网络或安装器锁而失败，这里重试3次并检查退出码
+-        $ok = $false
++        [string]$ComponentArgs = $ComponentsToAdd | ForEach-Object { " --add " + $_ }
++        $Arguments = @('/c', 'vs_installer.exe', 'modify', '--installPath', "`"$InstallPath`"", $ComponentArgs, '--quiet', '--norestart')
++        $ExitCode = 1
+         for ($i = 1; $i -le 3; $i++) {
+           Write-Host "vs_installer attempt $i..."
+-          $proc = Start-Process -FilePath "$InstallerDir\vs_installer.exe" -ArgumentList $Arguments -Wait -PassThru
+-          Write-Host "Exit code: $($proc.ExitCode)"
+-          if ($proc.ExitCode -eq 0) { $ok = $true; break }
+-          Start-Sleep -Seconds 20
+-        }
+-        if (-not $ok) {
+-          Write-Host "##[error] vs_installer failed after 3 attempts"
+-          Get-ChildItem "$env:TEMP" -Filter "dd_setup_*.log" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1 | ForEach-Object { Write-Host "---- $($_.FullName) (tail) ----"; Get-Content $_.FullName -Tail 150 }
++          $Process = Start-Process -FilePath cmd.exe -ArgumentList $Arguments -Wait -PassThru -WindowStyle Hidden
++          $ExitCode = $Process.ExitCode
++          Write-Host "Exit code: $ExitCode"
++          if ($ExitCode -eq 0) { break }
++          Start-Sleep -Seconds 15
++        }
++        if ($ExitCode -ne 0) {
++          Write-Host "##[error] vs_installer failed after 3 attempts (exit code $ExitCode). Known intermittent GitHub Actions Windows-runner issue (actions/runner-images#12880) - re-running the job often resolves it."
+           exit 1
+         }
+       
+@@ -74,26 +73,25 @@
+     - name: Install MFC and ATL
+       shell: pwsh
+       run: |
+-        $InstallerDir = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer"
+-        $InstallPath = & "$InstallerDir\vswhere.exe" -latest -property installationPath
+-        $Arguments = @(
+-          "modify", "--installPath", "$InstallPath",
+-          "--add", "Microsoft.VisualStudio.Component.VC.ATL",
+-          "--add", "Microsoft.VisualStudio.Component.VC.ATLMFC",
+-          "--quiet", "--norestart"
++        Set-Location "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\"
++        $InstallPath = & ".\vswhere.exe" -latest -property installationPath
++        $ComponentsToAdd = @(
++          "Microsoft.VisualStudio.Component.VC.ATL",
++          "Microsoft.VisualStudio.Component.VC.ATLMFC"
+         )
+-        #vs_installer.exe在无人值守的Runner上偶尔会因为网络或安装器锁而失败，这里重试3次并检查退出码
+-        $ok = $false
++        [string]$ComponentArgs = $ComponentsToAdd | ForEach-Object { " --add " + $_ }
++        $Arguments = @('/c', 'vs_installer.exe', 'modify', '--installPath', "`"$InstallPath`"", $ComponentArgs, '--quiet', '--norestart')
++        $ExitCode = 1
+         for ($i = 1; $i -le 3; $i++) {
+           Write-Host "vs_installer attempt $i..."
+-          $proc = Start-Process -FilePath "$InstallerDir\vs_installer.exe" -ArgumentList $Arguments -Wait -PassThru
+-          Write-Host "Exit code: $($proc.ExitCode)"
+-          if ($proc.ExitCode -eq 0) { $ok = $true; break }
+-          Start-Sleep -Seconds 20
+-        }
+-        if (-not $ok) {
+-          Write-Host "##[error] vs_installer failed after 3 attempts"
+-          Get-ChildItem "$env:TEMP" -Filter "dd_setup_*.log" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1 | ForEach-Object { Write-Host "---- $($_.FullName) (tail) ----"; Get-Content $_.FullName -Tail 150 }
++          $Process = Start-Process -FilePath cmd.exe -ArgumentList $Arguments -Wait -PassThru -WindowStyle Hidden
++          $ExitCode = $Process.ExitCode
++          Write-Host "Exit code: $ExitCode"
++          if ($ExitCode -eq 0) { break }
++          Start-Sleep -Seconds 15
++        }
++        if ($ExitCode -ne 0) {
++          Write-Host "##[error] vs_installer failed after 3 attempts (exit code $ExitCode). Known intermittent GitHub Actions Windows-runner issue (actions/runner-images#12880) - re-running the job often resolves it."
+           exit 1
+         }
+       
+@@ -133,28 +131,27 @@
+     - name: Install MFC and ATL
+       shell: pwsh
+       run: |
+-        $InstallerDir = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer"
+-        $InstallPath = & "$InstallerDir\vswhere.exe" -latest -property installationPath
+-        $Arguments = @(
+-          "modify", "--installPath", "$InstallPath",
+-          "--add", "Microsoft.VisualStudio.Component.VC.ATL",
+-          "--add", "Microsoft.VisualStudio.Component.VC.ATLMFC",
+-          "--add", "Microsoft.VisualStudio.Component.VC.Tools.ARM64",
+-          "--add", "Microsoft.VisualStudio.Component.VC.v143.ARM64",
+-          "--quiet", "--norestart"
++        Set-Location "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\"
++        $InstallPath = & ".\vswhere.exe" -latest -property installationPath
++        $ComponentsToAdd = @(
++          "Microsoft.VisualStudio.Component.VC.ATL",
++          "Microsoft.VisualStudio.Component.VC.ATLMFC",
++          "Microsoft.VisualStudio.Component.VC.Tools.ARM64",
++          "Microsoft.VisualStudio.Component.VC.v143.ARM64"
+         )
+-        #vs_installer.exe在无人值守的Runner上偶尔会因为网络或安装器锁而失败，这里重试3次并检查退出码
+-        $ok = $false
++        [string]$ComponentArgs = $ComponentsToAdd | ForEach-Object { " --add " + $_ }
++        $Arguments = @('/c', 'vs_installer.exe', 'modify', '--installPath', "`"$InstallPath`"", $ComponentArgs, '--quiet', '--norestart')
++        $ExitCode = 1
+         for ($i = 1; $i -le 3; $i++) {
+           Write-Host "vs_installer attempt $i..."
+-          $proc = Start-Process -FilePath "$InstallerDir\vs_installer.exe" -ArgumentList $Arguments -Wait -PassThru
+-          Write-Host "Exit code: $($proc.ExitCode)"
+-          if ($proc.ExitCode -eq 0) { $ok = $true; break }
+-          Start-Sleep -Seconds 20
+-        }
+-        if (-not $ok) {
+-          Write-Host "##[error] vs_installer failed after 3 attempts"
+-          Get-ChildItem "$env:TEMP" -Filter "dd_setup_*.log" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1 | ForEach-Object { Write-Host "---- $($_.FullName) (tail) ----"; Get-Content $_.FullName -Tail 150 }
++          $Process = Start-Process -FilePath cmd.exe -ArgumentList $Arguments -Wait -PassThru -WindowStyle Hidden
++          $ExitCode = $Process.ExitCode
++          Write-Host "Exit code: $ExitCode"
++          if ($ExitCode -eq 0) { break }
++          Start-Sleep -Seconds 15
++        }
++        if ($ExitCode -ne 0) {
++          Write-Host "##[error] vs_installer failed after 3 attempts (exit code $ExitCode). Known intermittent GitHub Actions Windows-runner issue (actions/runner-images#12880) - re-running the job often resolves it."
+           exit 1
+         }
+       

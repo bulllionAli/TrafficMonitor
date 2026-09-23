@@ -1,4 +1,5 @@
 name: Release CI
+
 on:
   push:
     tags: ['v*']
@@ -10,51 +11,77 @@ jobs:
     runs-on: windows-2022
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Install MFC and ATL
       shell: pwsh
       run: |
+        $ErrorActionPreference = "Stop"
+
         $InstallerDir = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer"
-        $InstallPath = & "$InstallerDir\vswhere.exe" -latest -property installationPath
+        $Installer = Join-Path $InstallerDir "vs_installer.exe"
+        $VsWhere = Join-Path $InstallerDir "vswhere.exe"
+
+        if (-not (Test-Path $Installer)) {
+          throw "Visual Studio Installer not found: $Installer"
+        }
+
+        if (-not (Test-Path $VsWhere)) {
+          throw "vswhere.exe not found: $VsWhere"
+        }
+
+        $InstallPath = & $VsWhere -latest -products * -property installationPath
+
+        if (-not $InstallPath) {
+          throw "Could not find Visual Studio installation path."
+        }
+
+        Write-Host "Visual Studio installation path:"
+        Write-Host $InstallPath
+
+        Write-Host "Installing ATL and MFC..."
+
         $Arguments = @(
-          "modify", "--installPath", "$InstallPath",
-          "--add", "Microsoft.VisualStudio.Component.VC.ATL",
-          "--add", "Microsoft.VisualStudio.Component.VC.ATLMFC",
-          "--quiet", "--norestart"
+          "modify"
+          "--installPath"
+          "$InstallPath"
+          "--add"
+          "Microsoft.VisualStudio.Component.VC.ATL"
+          "--add"
+          "Microsoft.VisualStudio.Component.VC.ATLMFC"
+          "--quiet"
+          "--wait"
+          "--norestart"
         )
-        $ExitCode = 1
-        for ($i = 1; $i -le 3; $i++) {
-          Write-Host "vs_installer attempt $i..."
-          $OutFile = "$env:TEMP\vsi_out_$i.log"
-          $ErrFile = "$env:TEMP\vsi_err_$i.log"
-          $Process = Start-Process -FilePath "$InstallerDir\vs_installer.exe" -ArgumentList $Arguments -Wait -PassThru -RedirectStandardOutput $OutFile -RedirectStandardError $ErrFile
-          $ExitCode = $Process.ExitCode
-          Write-Host "Exit code: $ExitCode"
-          if (Test-Path $OutFile) { Write-Host "--- stdout ---"; Get-Content $OutFile }
-          if (Test-Path $ErrFile) { Write-Host "--- stderr ---"; Get-Content $ErrFile }
-          if ($ExitCode -eq 0) { break }
-          Start-Sleep -Seconds 15
-        }
+
+        & $Installer @Arguments
+
+        $ExitCode = $LASTEXITCODE
+
+        Write-Host "Visual Studio Installer exit code: $ExitCode"
+
         if ($ExitCode -ne 0) {
-          Write-Host "##[error] vs_installer failed after 3 attempts (exit code $ExitCode)"
-          exit 1
+          throw "Visual Studio Installer failed with exit code $ExitCode"
         }
-      
+
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v2
-      
+
     - name: Run msbuild
-      run: msbuild TrafficMonitor_Lite.sln -p:configuration="Release (lite)" -p:platform=x64 -p:platformToolset=v143
-      
+      run: |
+        msbuild TrafficMonitor_Lite.sln `
+          -p:configuration="Release (lite)" `
+          -p:platform=x64 `
+          -p:platformToolset=v143
+
     - name: Get current time
       uses: josStorer/get-current-time@v2.0.2
       id: current-time
       with:
         format: YYYYMMDD_HHmmss
         utcOffset: "+08:00"
-      
-    - name : Upload artifact
+
+    - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: x64_${{ steps.current-time.outputs.formattedTime }}_TrafficMonitor
@@ -62,117 +89,173 @@ jobs:
           Bin/x64/Release (lite)/TrafficMonitor.exe
           Bin/x64/Release (lite)/*.dll
 
-    - name : Upload pdb files
+    - name: Upload pdb files
       uses: actions/upload-artifact@v4
       with:
         name: x64_${{ steps.current-time.outputs.formattedTime }}_pdb
         path: Bin/x64/Release (lite)/*.pdb
 
+
   x86_build:
     runs-on: windows-2022
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Install MFC and ATL
       shell: pwsh
       run: |
+        $ErrorActionPreference = "Stop"
+
         $InstallerDir = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer"
-        $InstallPath = & "$InstallerDir\vswhere.exe" -latest -property installationPath
+        $Installer = Join-Path $InstallerDir "vs_installer.exe"
+        $VsWhere = Join-Path $InstallerDir "vswhere.exe"
+
+        if (-not (Test-Path $Installer)) {
+          throw "Visual Studio Installer not found: $Installer"
+        }
+
+        if (-not (Test-Path $VsWhere)) {
+          throw "vswhere.exe not found: $VsWhere"
+        }
+
+        $InstallPath = & $VsWhere -latest -products * -property installationPath
+
+        if (-not $InstallPath) {
+          throw "Could not find Visual Studio installation path."
+        }
+
+        Write-Host "Visual Studio installation path:"
+        Write-Host $InstallPath
+
+        Write-Host "Installing ATL and MFC..."
+
         $Arguments = @(
-          "modify", "--installPath", "$InstallPath",
-          "--add", "Microsoft.VisualStudio.Component.VC.ATL",
-          "--add", "Microsoft.VisualStudio.Component.VC.ATLMFC",
-          "--quiet", "--norestart"
+          "modify"
+          "--installPath"
+          "$InstallPath"
+          "--add"
+          "Microsoft.VisualStudio.Component.VC.ATL"
+          "--add"
+          "Microsoft.VisualStudio.Component.VC.ATLMFC"
+          "--quiet"
+          "--wait"
+          "--norestart"
         )
-        $ExitCode = 1
-        for ($i = 1; $i -le 3; $i++) {
-          Write-Host "vs_installer attempt $i..."
-          $OutFile = "$env:TEMP\vsi_out_$i.log"
-          $ErrFile = "$env:TEMP\vsi_err_$i.log"
-          $Process = Start-Process -FilePath "$InstallerDir\vs_installer.exe" -ArgumentList $Arguments -Wait -PassThru -RedirectStandardOutput $OutFile -RedirectStandardError $ErrFile
-          $ExitCode = $Process.ExitCode
-          Write-Host "Exit code: $ExitCode"
-          if (Test-Path $OutFile) { Write-Host "--- stdout ---"; Get-Content $OutFile }
-          if (Test-Path $ErrFile) { Write-Host "--- stderr ---"; Get-Content $ErrFile }
-          if ($ExitCode -eq 0) { break }
-          Start-Sleep -Seconds 15
-        }
+
+        & $Installer @Arguments
+
+        $ExitCode = $LASTEXITCODE
+
+        Write-Host "Visual Studio Installer exit code: $ExitCode"
+
         if ($ExitCode -ne 0) {
-          Write-Host "##[error] vs_installer failed after 3 attempts (exit code $ExitCode)"
-          exit 1
+          throw "Visual Studio Installer failed with exit code $ExitCode"
         }
-      
+
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v2
-      
+
     - name: Run msbuild
-      run: msbuild TrafficMonitor_Lite.sln -p:configuration="Release (lite)" -p:platform=x86 -p:platformToolset=v143
-      
+      run: |
+        msbuild TrafficMonitor_Lite.sln `
+          -p:configuration="Release (lite)" `
+          -p:platform=x86 `
+          -p:platformToolset=v143
+
     - name: Get current time
       uses: josStorer/get-current-time@v2.0.2
       id: current-time
       with:
         format: YYYYMMDD_HHmmss
         utcOffset: "+08:00"
-      
-    - name : Upload artifact
+
+    - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: x86_${{ steps.current-time.outputs.formattedTime }}_TrafficMonitor
         path: |
           Bin/Release (lite)/TrafficMonitor.exe
           Bin/Release (lite)/*.dll
-      
-    - name : Upload pdb files
+
+    - name: Upload pdb files
       uses: actions/upload-artifact@v4
       with:
         name: x86_${{ steps.current-time.outputs.formattedTime }}_pdb
         path: Bin/Release (lite)/*.pdb
 
+
   arm64ec_build:
     runs-on: windows-2022
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
-    - name: Install MFC and ATL
+    - name: Install MFC, ATL and ARM64 tools
       shell: pwsh
       run: |
+        $ErrorActionPreference = "Stop"
+
         $InstallerDir = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer"
-        $InstallPath = & "$InstallerDir\vswhere.exe" -latest -property installationPath
+        $Installer = Join-Path $InstallerDir "vs_installer.exe"
+        $VsWhere = Join-Path $InstallerDir "vswhere.exe"
+
+        if (-not (Test-Path $Installer)) {
+          throw "Visual Studio Installer not found: $Installer"
+        }
+
+        if (-not (Test-Path $VsWhere)) {
+          throw "vswhere.exe not found: $VsWhere"
+        }
+
+        $InstallPath = & $VsWhere -latest -products * -property installationPath
+
+        if (-not $InstallPath) {
+          throw "Could not find Visual Studio installation path."
+        }
+
+        Write-Host "Visual Studio installation path:"
+        Write-Host $InstallPath
+
+        Write-Host "Installing ATL, MFC and ARM64 tools..."
+
         $Arguments = @(
-          "modify", "--installPath", "$InstallPath",
-          "--add", "Microsoft.VisualStudio.Component.VC.ATL",
-          "--add", "Microsoft.VisualStudio.Component.VC.ATLMFC",
-          "--add", "Microsoft.VisualStudio.Component.VC.Tools.ARM64",
-          "--add", "Microsoft.VisualStudio.Component.VC.v143.ARM64",
-          "--quiet", "--norestart"
+          "modify"
+          "--installPath"
+          "$InstallPath"
+          "--add"
+          "Microsoft.VisualStudio.Component.VC.ATL"
+          "--add"
+          "Microsoft.VisualStudio.Component.VC.ATLMFC"
+          "--add"
+          "Microsoft.VisualStudio.Component.VC.Tools.ARM64"
+          "--add"
+          "Microsoft.VisualStudio.Component.VC.v143.ARM64"
+          "--quiet"
+          "--wait"
+          "--norestart"
         )
-        $ExitCode = 1
-        for ($i = 1; $i -le 3; $i++) {
-          Write-Host "vs_installer attempt $i..."
-          $OutFile = "$env:TEMP\vsi_out_$i.log"
-          $ErrFile = "$env:TEMP\vsi_err_$i.log"
-          $Process = Start-Process -FilePath "$InstallerDir\vs_installer.exe" -ArgumentList $Arguments -Wait -PassThru -RedirectStandardOutput $OutFile -RedirectStandardError $ErrFile
-          $ExitCode = $Process.ExitCode
-          Write-Host "Exit code: $ExitCode"
-          if (Test-Path $OutFile) { Write-Host "--- stdout ---"; Get-Content $OutFile }
-          if (Test-Path $ErrFile) { Write-Host "--- stderr ---"; Get-Content $ErrFile }
-          if ($ExitCode -eq 0) { break }
-          Start-Sleep -Seconds 15
-        }
+
+        & $Installer @Arguments
+
+        $ExitCode = $LASTEXITCODE
+
+        Write-Host "Visual Studio Installer exit code: $ExitCode"
+
         if ($ExitCode -ne 0) {
-          Write-Host "##[error] vs_installer failed after 3 attempts (exit code $ExitCode)"
-          exit 1
+          throw "Visual Studio Installer failed with exit code $ExitCode"
         }
-      
+
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v2
-      
+
     - name: Run msbuild
-      run: msbuild TrafficMonitor_Lite.sln -p:configuration="Release (lite)" -p:platform=ARM64EC -p:platformToolset=v143
-      
+      run: |
+        msbuild TrafficMonitor_Lite.sln `
+          -p:configuration="Release (lite)" `
+          -p:platform=ARM64EC `
+          -p:platformToolset=v143
+
     - name: Get current time
       uses: josStorer/get-current-time@v2.0.2
       id: current-time
@@ -180,10 +263,7 @@ jobs:
         format: YYYYMMDD_HHmmss
         utcOffset: "+08:00"
 
-    # - name: Move dll file path 
-    #   run: mv Bin/x64/Release/*.dll  Bin/ARM64EC/Release/
-
-    - name : Upload artifact
+    - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: arm64EC_${{ steps.current-time.outputs.formattedTime }}_TrafficMonitor
@@ -191,7 +271,7 @@ jobs:
           Bin/ARM64EC/Release (lite)/TrafficMonitor.exe
           Bin/ARM64EC/Release (lite)/*.dll
 
-    - name : Upload pdb files
+    - name: Upload pdb files
       uses: actions/upload-artifact@v4
       with:
         name: arm64EC_${{ steps.current-time.outputs.formattedTime }}_pdb

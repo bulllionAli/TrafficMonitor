@@ -11,6 +11,22 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+
+    - name: Install MFC and ATL
+      shell: pwsh
+      run: |
+        $InstallerDir = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer"
+        $InstallPath = & "$InstallerDir\vswhere.exe" -latest -property installationPath
+        $Arguments = @(
+          "modify", "--installPath", "$InstallPath",
+          "--add", "Microsoft.VisualStudio.Component.VC.ATL",
+          "--add", "Microsoft.VisualStudio.Component.VC.ATLMFC",
+          "--quiet", "--norestart", "--nocache"
+        )
+        #vs_installer.exe有时需要运行两次才能完成安装
+        1..2 | ForEach-Object {
+          Start-Process -FilePath "$InstallerDir\vs_installer.exe" -ArgumentList $Arguments -Wait -PassThru | Out-Null
+        }
       
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v2
@@ -44,6 +60,22 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+
+    - name: Install MFC and ATL
+      shell: pwsh
+      run: |
+        $InstallerDir = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer"
+        $InstallPath = & "$InstallerDir\vswhere.exe" -latest -property installationPath
+        $Arguments = @(
+          "modify", "--installPath", "$InstallPath",
+          "--add", "Microsoft.VisualStudio.Component.VC.ATL",
+          "--add", "Microsoft.VisualStudio.Component.VC.ATLMFC",
+          "--quiet", "--norestart", "--nocache"
+        )
+        #vs_installer.exe有时需要运行两次才能完成安装
+        1..2 | ForEach-Object {
+          Start-Process -FilePath "$InstallerDir\vs_installer.exe" -ArgumentList $Arguments -Wait -PassThru | Out-Null
+        }
       
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v2
@@ -77,6 +109,22 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+
+    - name: Install MFC and ATL
+      shell: pwsh
+      run: |
+        $InstallerDir = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer"
+        $InstallPath = & "$InstallerDir\vswhere.exe" -latest -property installationPath
+        $Arguments = @(
+          "modify", "--installPath", "$InstallPath",
+          "--add", "Microsoft.VisualStudio.Component.VC.ATL",
+          "--add", "Microsoft.VisualStudio.Component.VC.ATLMFC",
+          "--quiet", "--norestart", "--nocache"
+        )
+        #vs_installer.exe有时需要运行两次才能完成安装
+        1..2 | ForEach-Object {
+          Start-Process -FilePath "$InstallerDir\vs_installer.exe" -ArgumentList $Arguments -Wait -PassThru | Out-Null
+        }
       
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v2

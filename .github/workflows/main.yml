@@ -15,25 +15,29 @@ jobs:
     - name: Install MFC and ATL
       shell: pwsh
       run: |
-        Set-Location "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\"
-        $InstallPath = & ".\vswhere.exe" -latest -property installationPath
-        $ComponentsToAdd = @(
-          "Microsoft.VisualStudio.Component.VC.ATL",
-          "Microsoft.VisualStudio.Component.VC.ATLMFC"
+        $InstallerDir = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer"
+        $InstallPath = & "$InstallerDir\vswhere.exe" -latest -property installationPath
+        $Arguments = @(
+          "modify", "--installPath", "$InstallPath",
+          "--add", "Microsoft.VisualStudio.Component.VC.ATL",
+          "--add", "Microsoft.VisualStudio.Component.VC.ATLMFC",
+          "--quiet", "--norestart"
         )
-        [string]$ComponentArgs = $ComponentsToAdd | ForEach-Object { " --add " + $_ }
-        $Arguments = @('/c', 'vs_installer.exe', 'modify', '--installPath', "`"$InstallPath`"", $ComponentArgs, '--quiet', '--norestart')
         $ExitCode = 1
         for ($i = 1; $i -le 3; $i++) {
           Write-Host "vs_installer attempt $i..."
-          $Process = Start-Process -FilePath cmd.exe -ArgumentList $Arguments -Wait -PassThru -WindowStyle Hidden
+          $OutFile = "$env:TEMP\vsi_out_$i.log"
+          $ErrFile = "$env:TEMP\vsi_err_$i.log"
+          $Process = Start-Process -FilePath "$InstallerDir\vs_installer.exe" -ArgumentList $Arguments -Wait -PassThru -RedirectStandardOutput $OutFile -RedirectStandardError $ErrFile
           $ExitCode = $Process.ExitCode
           Write-Host "Exit code: $ExitCode"
+          if (Test-Path $OutFile) { Write-Host "--- stdout ---"; Get-Content $OutFile }
+          if (Test-Path $ErrFile) { Write-Host "--- stderr ---"; Get-Content $ErrFile }
           if ($ExitCode -eq 0) { break }
           Start-Sleep -Seconds 15
         }
         if ($ExitCode -ne 0) {
-          Write-Host "##[error] vs_installer failed after 3 attempts (exit code $ExitCode). Known intermittent GitHub Actions Windows-runner issue (actions/runner-images#12880) - re-running the job often resolves it."
+          Write-Host "##[error] vs_installer failed after 3 attempts (exit code $ExitCode)"
           exit 1
         }
       
@@ -73,25 +77,29 @@ jobs:
     - name: Install MFC and ATL
       shell: pwsh
       run: |
-        Set-Location "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\"
-        $InstallPath = & ".\vswhere.exe" -latest -property installationPath
-        $ComponentsToAdd = @(
-          "Microsoft.VisualStudio.Component.VC.ATL",
-          "Microsoft.VisualStudio.Component.VC.ATLMFC"
+        $InstallerDir = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer"
+        $InstallPath = & "$InstallerDir\vswhere.exe" -latest -property installationPath
+        $Arguments = @(
+          "modify", "--installPath", "$InstallPath",
+          "--add", "Microsoft.VisualStudio.Component.VC.ATL",
+          "--add", "Microsoft.VisualStudio.Component.VC.ATLMFC",
+          "--quiet", "--norestart"
         )
-        [string]$ComponentArgs = $ComponentsToAdd | ForEach-Object { " --add " + $_ }
-        $Arguments = @('/c', 'vs_installer.exe', 'modify', '--installPath', "`"$InstallPath`"", $ComponentArgs, '--quiet', '--norestart')
         $ExitCode = 1
         for ($i = 1; $i -le 3; $i++) {
           Write-Host "vs_installer attempt $i..."
-          $Process = Start-Process -FilePath cmd.exe -ArgumentList $Arguments -Wait -PassThru -WindowStyle Hidden
+          $OutFile = "$env:TEMP\vsi_out_$i.log"
+          $ErrFile = "$env:TEMP\vsi_err_$i.log"
+          $Process = Start-Process -FilePath "$InstallerDir\vs_installer.exe" -ArgumentList $Arguments -Wait -PassThru -RedirectStandardOutput $OutFile -RedirectStandardError $ErrFile
           $ExitCode = $Process.ExitCode
           Write-Host "Exit code: $ExitCode"
+          if (Test-Path $OutFile) { Write-Host "--- stdout ---"; Get-Content $OutFile }
+          if (Test-Path $ErrFile) { Write-Host "--- stderr ---"; Get-Content $ErrFile }
           if ($ExitCode -eq 0) { break }
           Start-Sleep -Seconds 15
         }
         if ($ExitCode -ne 0) {
-          Write-Host "##[error] vs_installer failed after 3 attempts (exit code $ExitCode). Known intermittent GitHub Actions Windows-runner issue (actions/runner-images#12880) - re-running the job often resolves it."
+          Write-Host "##[error] vs_installer failed after 3 attempts (exit code $ExitCode)"
           exit 1
         }
       
@@ -131,27 +139,31 @@ jobs:
     - name: Install MFC and ATL
       shell: pwsh
       run: |
-        Set-Location "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\"
-        $InstallPath = & ".\vswhere.exe" -latest -property installationPath
-        $ComponentsToAdd = @(
-          "Microsoft.VisualStudio.Component.VC.ATL",
-          "Microsoft.VisualStudio.Component.VC.ATLMFC",
-          "Microsoft.VisualStudio.Component.VC.Tools.ARM64",
-          "Microsoft.VisualStudio.Component.VC.v143.ARM64"
+        $InstallerDir = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer"
+        $InstallPath = & "$InstallerDir\vswhere.exe" -latest -property installationPath
+        $Arguments = @(
+          "modify", "--installPath", "$InstallPath",
+          "--add", "Microsoft.VisualStudio.Component.VC.ATL",
+          "--add", "Microsoft.VisualStudio.Component.VC.ATLMFC",
+          "--add", "Microsoft.VisualStudio.Component.VC.Tools.ARM64",
+          "--add", "Microsoft.VisualStudio.Component.VC.v143.ARM64",
+          "--quiet", "--norestart"
         )
-        [string]$ComponentArgs = $ComponentsToAdd | ForEach-Object { " --add " + $_ }
-        $Arguments = @('/c', 'vs_installer.exe', 'modify', '--installPath', "`"$InstallPath`"", $ComponentArgs, '--quiet', '--norestart')
         $ExitCode = 1
         for ($i = 1; $i -le 3; $i++) {
           Write-Host "vs_installer attempt $i..."
-          $Process = Start-Process -FilePath cmd.exe -ArgumentList $Arguments -Wait -PassThru -WindowStyle Hidden
+          $OutFile = "$env:TEMP\vsi_out_$i.log"
+          $ErrFile = "$env:TEMP\vsi_err_$i.log"
+          $Process = Start-Process -FilePath "$InstallerDir\vs_installer.exe" -ArgumentList $Arguments -Wait -PassThru -RedirectStandardOutput $OutFile -RedirectStandardError $ErrFile
           $ExitCode = $Process.ExitCode
           Write-Host "Exit code: $ExitCode"
+          if (Test-Path $OutFile) { Write-Host "--- stdout ---"; Get-Content $OutFile }
+          if (Test-Path $ErrFile) { Write-Host "--- stderr ---"; Get-Content $ErrFile }
           if ($ExitCode -eq 0) { break }
           Start-Sleep -Seconds 15
         }
         if ($ExitCode -ne 0) {
-          Write-Host "##[error] vs_installer failed after 3 attempts (exit code $ExitCode). Known intermittent GitHub Actions Windows-runner issue (actions/runner-images#12880) - re-running the job often resolves it."
+          Write-Host "##[error] vs_installer failed after 3 attempts (exit code $ExitCode)"
           exit 1
         }
       

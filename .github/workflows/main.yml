@@ -11,70 +11,7 @@ jobs:
     runs-on: windows-2022
 
     steps:
-    - uses: actions/checkout@v5
-
-    - name: Install MFC and ATL
-      shell: pwsh
-      run: |
-        $ErrorActionPreference = "Stop"
-
-        $InstallerDir = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer"
-        $InstallPath = & "$InstallerDir\vswhere.exe" -latest -property installationPath
-
-        if (-not $InstallPath) {
-          throw "Could not find Visual Studio installation path."
-        }
-
-        Write-Host "Visual Studio installation path: $InstallPath"
-
-        $Arguments = @(
-          "modify", "--installPath", "$InstallPath",
-          "--add", "Microsoft.VisualStudio.Component.VC.ATL",
-          "--add", "Microsoft.VisualStudio.Component.VC.ATLMFC",
-          "--quiet", "--norestart"
-        )
-
-        $ExitCode = 1
-
-        for ($i = 1; $i -le 3; $i++) {
-          Write-Host "vs_installer attempt $i..."
-
-          $OutFile = "$env:TEMP\vsi_out_$i.log"
-          $ErrFile = "$env:TEMP\vsi_err_$i.log"
-
-          $Process = Start-Process `
-            -FilePath "$InstallerDir\vs_installer.exe" `
-            -ArgumentList $Arguments `
-            -Wait `
-            -PassThru `
-            -RedirectStandardOutput $OutFile `
-            -RedirectStandardError $ErrFile
-
-          $ExitCode = $Process.ExitCode
-
-          Write-Host "Exit code: $ExitCode"
-
-          if (Test-Path $OutFile) {
-            Write-Host "--- stdout ---"
-            Get-Content $OutFile
-          }
-
-          if (Test-Path $ErrFile) {
-            Write-Host "--- stderr ---"
-            Get-Content $ErrFile
-          }
-
-          if ($ExitCode -eq 0) {
-            break
-          }
-
-          Start-Sleep -Seconds 15
-        }
-
-        if ($ExitCode -ne 0) {
-          Write-Host "##[error] vs_installer failed after 3 attempts (exit code $ExitCode)"
-          exit 1
-        }
+    - uses: actions/checkout@v6
 
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v3
@@ -109,70 +46,7 @@ jobs:
     runs-on: windows-2022
 
     steps:
-    - uses: actions/checkout@v5
-
-    - name: Install MFC and ATL
-      shell: pwsh
-      run: |
-        $ErrorActionPreference = "Stop"
-
-        $InstallerDir = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer"
-        $InstallPath = & "$InstallerDir\vswhere.exe" -latest -property installationPath
-
-        if (-not $InstallPath) {
-          throw "Could not find Visual Studio installation path."
-        }
-
-        Write-Host "Visual Studio installation path: $InstallPath"
-
-        $Arguments = @(
-          "modify", "--installPath", "$InstallPath",
-          "--add", "Microsoft.VisualStudio.Component.VC.ATL",
-          "--add", "Microsoft.VisualStudio.Component.VC.ATLMFC",
-          "--quiet", "--norestart"
-        )
-
-        $ExitCode = 1
-
-        for ($i = 1; $i -le 3; $i++) {
-          Write-Host "vs_installer attempt $i..."
-
-          $OutFile = "$env:TEMP\vsi_out_$i.log"
-          $ErrFile = "$env:TEMP\vsi_err_$i.log"
-
-          $Process = Start-Process `
-            -FilePath "$InstallerDir\vs_installer.exe" `
-            -ArgumentList $Arguments `
-            -Wait `
-            -PassThru `
-            -RedirectStandardOutput $OutFile `
-            -RedirectStandardError $ErrFile
-
-          $ExitCode = $Process.ExitCode
-
-          Write-Host "Exit code: $ExitCode"
-
-          if (Test-Path $OutFile) {
-            Write-Host "--- stdout ---"
-            Get-Content $OutFile
-          }
-
-          if (Test-Path $ErrFile) {
-            Write-Host "--- stderr ---"
-            Get-Content $ErrFile
-          }
-
-          if ($ExitCode -eq 0) {
-            break
-          }
-
-          Start-Sleep -Seconds 15
-        }
-
-        if ($ExitCode -ne 0) {
-          Write-Host "##[error] vs_installer failed after 3 attempts (exit code $ExitCode)"
-          exit 1
-        }
+    - uses: actions/checkout@v6
 
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v3
@@ -207,72 +81,7 @@ jobs:
     runs-on: windows-2022
 
     steps:
-    - uses: actions/checkout@v5
-
-    - name: Install MFC and ATL
-      shell: pwsh
-      run: |
-        $ErrorActionPreference = "Stop"
-
-        $InstallerDir = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer"
-        $InstallPath = & "$InstallerDir\vswhere.exe" -latest -property installationPath
-
-        if (-not $InstallPath) {
-          throw "Could not find Visual Studio installation path."
-        }
-
-        Write-Host "Visual Studio installation path: $InstallPath"
-
-        $Arguments = @(
-          "modify", "--installPath", "$InstallPath",
-          "--add", "Microsoft.VisualStudio.Component.VC.ATL",
-          "--add", "Microsoft.VisualStudio.Component.VC.ATLMFC",
-          "--add", "Microsoft.VisualStudio.Component.VC.Tools.ARM64",
-          "--add", "Microsoft.VisualStudio.Component.VC.v143.ARM64",
-          "--quiet", "--norestart"
-        )
-
-        $ExitCode = 1
-
-        for ($i = 1; $i -le 3; $i++) {
-          Write-Host "vs_installer attempt $i..."
-
-          $OutFile = "$env:TEMP\vsi_out_$i.log"
-          $ErrFile = "$env:TEMP\vsi_err_$i.log"
-
-          $Process = Start-Process `
-            -FilePath "$InstallerDir\vs_installer.exe" `
-            -ArgumentList $Arguments `
-            -Wait `
-            -PassThru `
-            -RedirectStandardOutput $OutFile `
-            -RedirectStandardError $ErrFile
-
-          $ExitCode = $Process.ExitCode
-
-          Write-Host "Exit code: $ExitCode"
-
-          if (Test-Path $OutFile) {
-            Write-Host "--- stdout ---"
-            Get-Content $OutFile
-          }
-
-          if (Test-Path $ErrFile) {
-            Write-Host "--- stderr ---"
-            Get-Content $ErrFile
-          }
-
-          if ($ExitCode -eq 0) {
-            break
-          }
-
-          Start-Sleep -Seconds 15
-        }
-
-        if ($ExitCode -ne 0) {
-          Write-Host "##[error] vs_installer failed after 3 attempts (exit code $ExitCode)"
-          exit 1
-        }
+    - uses: actions/checkout@v6
 
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v3
@@ -287,6 +96,9 @@ jobs:
         $Time = [DateTimeOffset]::UtcNow.ToOffset([TimeSpan]::FromHours(8))
         $FormattedTime = $Time.ToString("yyyyMMdd_HHmmss")
         "formattedTime=$FormattedTime" >> $env:GITHUB_OUTPUT
+
+    # - name: Move dll file path
+    #   run: mv Bin/x64/Release/*.dll Bin/ARM64EC/Release/
 
     - name: Upload artifact
       uses: actions/upload-artifact@v7
